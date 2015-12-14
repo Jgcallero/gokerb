@@ -12,8 +12,8 @@ Documentation
 Documentation is maintained via godoc (see gopkgdoc for the [gokerb] or [khttp]
 packages).
 
-[gokerb]: http://gopkgdoc.appspot.com/pkg/github.com/jmckaskill/gokerb
-[khttp]: http://gopkgdoc.appspot.com/pkg/github.com/jmckaskill/gokerb/khttp
+[gokerb]: https://godoc.org/github.com/jmckaskill/gokerb
+[khttp]: https://godoc.org/github.com/jmckaskill/gokerb/khttp
 
 License (MIT)
 -------------
