@@ -64,6 +64,22 @@ var cryptTests = []struct {
 	{cryptDesCbcMd4, "cbc22fae235298e3", "0123456789abcdef"},
 	{cryptDesCbcMd4, "cbc22fae235298e3", "0123456789"},
 	{cryptDesCbcMd4, "cbc22fae235298e3", "0123456789abcdef0123"},
+	//{cryptAes256CtsHmac, "cbc22fae235298e3", "12"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"},
+	{cryptAes128CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef0123456789abcdef01"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef0123456789abcdef"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef0123456789abcd"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef01"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcdef"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef0123456789abcd"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef01"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcdef"},
+	{cryptAes256CtsHmac, "cbc22fae235298e3cbc22fae235298e3", "0123456789abcd"},
 }
 
 func TestCrypt(t *testing.T) {

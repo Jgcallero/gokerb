@@ -3,14 +3,19 @@ package kerb
 import (
 	"bytes"
 	"code.google.com/p/go.crypto/md4"
+	// XXX Same base package as above?
+	"crypto/aes"
 	"crypto/cipher"
 	"crypto/des"
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/rc4"
+	"crypto/sha1"
 	"crypto/subtle"
 	"encoding/binary"
+	//"encoding/hex"
+	"golang.org/x/crypto/pbkdf2"
 	"hash"
 	"io"
 	"unicode/utf16"
@@ -507,6 +512,160 @@ func (s *descbc) Key() []byte {
 	return s.key
 }
 
+type aeshmac struct {
+	key   []byte
+	etype int
+}
+
+func (s *aeshmac) Sign(algo, usage int, data ...[]byte) ([]byte, error) {
+	return nil, ErrProtocol
+}
+func (s *aeshmac) SignAlgo(usage int) int {
+	return s.etype
+}
+
+func (s *aeshmac) Encrypt(salt []byte, usage int, data ...[]byte) []byte {
+	h := hmac.New(sha1.New, s.key)
+	const bb = 16
+	const hashSize = 12
+	outsz := bb + hashSize
+	for _, d := range data {
+		outsz += len(d)
+	}
+	ln := outsz % bb
+	if ln == 0 {
+		ln = bb
+	}
+
+	out := make([]byte, outsz)
+
+	io.ReadFull(rand.Reader, out[:bb])
+	v := out[bb+hashSize:]
+	for _, d := range data {
+		n := copy(v, d)
+		v = v[n:]
+	}
+
+	h.Write(out)
+	hash := h.Sum(nil)
+	copy(out[bb:], hash[:hashSize])
+
+	iv := [bb]byte{}
+	b, err := aes.NewCipher(s.key)
+	if err != nil {
+		panic(err)
+	}
+	c := cipher.NewCBCEncrypter(b, iv[:])
+
+	c.CryptBlocks(out[:outsz-bb-ln], out[:outsz-bb-ln])
+
+	// Final block
+	pn := [bb]byte{}
+	cn := [bb]byte{}
+	copy(pn[:], out[outsz-ln:outsz])
+
+	// penultimate block
+	pn1 := out[outsz-bb-ln : outsz-ln]
+	cn1 := [bb]byte{}
+
+	// Encrypt in order
+	c.CryptBlocks(cn1[:], pn1[:])
+	c.CryptBlocks(cn[:], pn[:])
+
+	// Swap the order in the final data
+	copy(out[outsz-bb-ln:outsz-ln], cn[:])
+	copy(out[outsz-ln:outsz], cn1[:ln])
+
+	return out
+}
+func (s *aeshmac) Decrypt(salt []byte, algo, usage int, data []byte) ([]byte, error) {
+	h := hmac.New(sha1.New, s.key)
+	const bb = 16
+	const hashSize = 12
+	insz := len(data)
+	ln := insz % bb
+	if ln == 0 {
+		ln = bb
+	}
+
+	iv := [bb]byte{}
+	b, _ := aes.NewCipher(s.key)
+	c := cipher.NewCBCDecrypter(b, iv[:])
+
+	c.CryptBlocks(data[:insz-bb-ln], data[:insz-bb-ln])
+
+	// Final block
+	cn := [bb]byte{}
+	copy(cn[:], data[insz-ln:insz])
+
+	// penultimate block
+	cn1 := data[insz-bb-ln : insz-ln]
+
+	// Decrypt penulimate block first, without CBC
+	dn := [bb]byte{}
+	b.Decrypt(dn[:], cn1)
+
+	// Append tail to cn
+	copy(cn[ln:], dn[ln:])
+
+	// Do normal CBC decryption, with flipped order
+	pn := [bb]byte{}
+	pn1 := [bb]byte{}
+	c.CryptBlocks(pn1[:], cn[:])
+	c.CryptBlocks(pn[:], cn1[:])
+
+	// Now append to output and truncate
+	copy(data[insz-bb-ln:insz-ln], pn1[:])
+	copy(data[insz-ln:], pn[:ln])
+
+	// Verify checksum
+	chk := make([]byte, hashSize)
+	h.Write(data[:bb])
+	h.Write(chk) // Just need h.Size() zero bytes instead of the checksum
+	h.Write(data[bb+len(chk):])
+	chk = h.Sum(nil)
+
+	if subtle.ConstantTimeCompare(chk[:hashSize], data[bb:bb+hashSize]) != 1 {
+		return nil, ErrProtocol
+	}
+
+	return data[bb+hashSize:], nil
+}
+func (s *aeshmac) EncryptAlgo(usage int) int {
+	return s.etype
+}
+
+func (s *aeshmac) Key() []byte {
+	return s.key
+}
+
+// aesmacKey converts a UTF8 password+salt into a key suitable for use with the
+// aeshmac.
+func aeshmacKey(password, salt string, usage int) []byte {
+	var iter int
+	var keyLen int
+	// XXX RFC3962 is a little vague - 4096 looks right, but there's a
+	// string-to-key parameter - where does that come from?
+	// Looks like iteration count might come from the KDC - where/how?
+	// ETYPE-INFO2 -> s2k-params for AES would list iteration count
+	switch usage {
+	case cryptAes128CtsHmac:
+		iter = 4096
+		keyLen = 24
+	case cryptAes256CtsHmac:
+		iter = 4096
+		keyLen = 32
+	}
+
+	// XXX is this right?
+	// https://tools.ietf.org/html/rfc3962 section 4 says:
+	// tkey = random2key(PBKDF2(passphrase, salt, iter_count, keylength))
+	// key = DK(tkey, "kerberos")
+	hashFunc := sha1.New
+	tkey := pbkdf2.Key([]byte(password), []byte(salt), iter, keyLen, hashFunc)
+	return desStringKey(string(tkey), "kerberos")
+}
+
 func generateKey(algo int, rand io.Reader) (key, error) {
 	switch algo {
 	case cryptRc4Hmac:
@@ -526,6 +685,8 @@ func generateKey(algo int, rand io.Reader) (key, error) {
 		u = fixweak(fixparity(u, true))
 		binary.BigEndian.PutUint64(k, u)
 		return loadKey(algo, k)
+	case cryptAes128CtsHmac, cryptAes256CtsHmac:
+		return nil, ErrProtocol
 	}
 
 	return nil, ErrProtocol
@@ -537,6 +698,8 @@ func loadKey(algo int, key []byte) (key, error) {
 		return &rc4hmac{key}, nil
 	case cryptDesCbcMd4, cryptDesCbcMd5:
 		return &descbc{key, algo}, nil
+	case cryptAes128CtsHmac, cryptAes256CtsHmac:
+		return &aeshmac{key, algo}, nil
 	}
 	return nil, ErrProtocol
 }
@@ -555,6 +718,8 @@ func loadStringKey(algo int, pass, salt string) (key, error) {
 
 	case cryptDesCbcMd4, cryptDesCbcMd5:
 		return &descbc{desStringKey(pass, salt), algo}, nil
+	case cryptAes128CtsHmac, cryptAes256CtsHmac:
+		return &aeshmac{aeshmacKey(pass, salt, algo), algo}, nil
 	}
 
 	return nil, ErrProtocol

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jmckaskill/asn1"
 	"io"
+	//"runtime/debug"
 	"strings"
 	"time"
 )
@@ -140,15 +141,17 @@ const (
 
 // Encryption algorithms
 const (
-	cryptDesCbcMd4 = 2
-	cryptDesCbcMd5 = 3
-	cryptRc4Hmac   = 23
-	signMd4        = 2
-	signMd4Des     = 3
-	signMd5        = 7
-	signMd5Des     = 8
-	signRc4Hmac    = -138
-	signGssFake    = 0x8003
+	cryptDesCbcMd4     = 2
+	cryptDesCbcMd5     = 3
+	cryptAes128CtsHmac = 17
+	cryptAes256CtsHmac = 18
+	cryptRc4Hmac       = 23
+	signMd4            = 2
+	signMd4Des         = 3
+	signMd5            = 7
+	signMd5Des         = 8
+	signRc4Hmac        = -138
+	signGssFake        = 0x8003
 
 	cryptGssDes     = 0x0000
 	cryptGssRc4Hmac = 0x1000
@@ -205,7 +208,7 @@ var (
 	ErrPassword          = errors.New("kerb: can't renew the main krbtgt ticket as the password is unknown")
 	ErrNoCommonAlgorithm = errors.New("kerb: no common algorithm")
 
-	supportedAlgorithms = []int{cryptRc4Hmac, cryptDesCbcMd5, cryptDesCbcMd4}
+	supportedAlgorithms = []int{cryptRc4Hmac, cryptDesCbcMd5, cryptDesCbcMd4, cryptAes128CtsHmac, cryptAes256CtsHmac}
 
 	asRequestParam     = "application,explicit,tag:10"
 	tgsRequestParam    = "application,explicit,tag:12"
@@ -554,6 +557,7 @@ func flagsToBitString(flags int) (s asn1.BitString) {
 
 func must(cond bool) {
 	if !cond {
+		//debug.PrintStack()
 		panic(ErrProtocol)
 	}
 }
