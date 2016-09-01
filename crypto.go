@@ -14,6 +14,7 @@ import (
 	"crypto/sha1"
 	"crypto/subtle"
 	"encoding/binary"
+	"golang.org/x/crypto/md4"
 	//"encoding/hex"
 	"golang.org/x/crypto/pbkdf2"
 	"hash"
