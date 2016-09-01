@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/jmckaskill/gokerb"
+	"github.com/jgcallero/gokerb"
 )
 
 // Transport is a HTTP client transport that authenticates all outgoing
