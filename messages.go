@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/jmckaskill/asn1"
 	"io"
 	//"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/jmckaskill/asn1"
 )
 
 // Remote error codes

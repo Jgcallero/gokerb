@@ -20,6 +20,8 @@ import (
 	"hash"
 	"io"
 	"unicode/utf16"
+
+	"golang.org/x/crypto/md4"
 )
 
 type key interface {
@@ -58,7 +60,7 @@ type rc4hmac struct {
 // rc4hmac.
 func rc4HmacKey(password string) []byte {
 	// Convert password from UTF8 to UTF16-LE
-	s := make([]byte, 0)
+	var s []byte
 	for _, r := range password {
 		if r > 0x10000 {
 			a, b := utf16.EncodeRune(r)
