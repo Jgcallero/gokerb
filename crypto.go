@@ -2,8 +2,6 @@ package kerb
 
 import (
 	"bytes"
-	"code.google.com/p/go.crypto/md4"
-	// XXX Same base package as above?
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/des"
@@ -21,8 +19,6 @@ import (
 	"hash"
 	"io"
 	"unicode/utf16"
-
-	"golang.org/x/crypto/md4"
 )
 
 type key interface {
