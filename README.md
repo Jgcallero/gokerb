@@ -2,10 +2,10 @@ About
 -----
 This is a go library for kerberos V5.
 
-[![Build Status][1]][2] [![GoDoc](https://godoc.org/github.com/cention-sany/go.kerb?status.png)](https://godoc.org/github.com/cention-sany/go.kerb)
+[![Build Status][1]][2] [![GoDoc](https://godoc.org/github.com/jgcallero/gokerb?status.png)](https://godoc.org/github.com/jgcallero/gokerb)
 
-[1]: https://secure.travis-ci.org/jmckaskill/gokerb.png
-[2]: http://www.travis-ci.org/jmckaskill/gokerb
+[1]: https://secure.travis-ci.org/jgcallero/gokerb.png
+[2]: http://www.travis-ci.org/jgcallero/gokerb
 
 Documentation
 -------------
