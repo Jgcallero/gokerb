@@ -1,6 +1,6 @@
 About
 -----
-This is a go library for kerberos V5.
+This is a go library for kerberos V5. This library has consolidated all of the forks of this repository and will continue to do so to provide the most complete service. With time it shall be expanded to have better documentation and complete functionality.
 
 [![Build Status][1]][2] [![GoDoc](https://godoc.org/github.com/jgcallero/gokerb?status.png)](https://godoc.org/github.com/jgcallero/gokerb)
 
