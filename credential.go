@@ -97,10 +97,12 @@ func chooseAlgorithm(msg *errorMessage) (etype int, salt string, err error) {
 type DialFn func(proto, realm string) (io.ReadWriteCloser, error)
 type NowFn func() time.Time
 
+// CredConfig allows customization on how to Dial the kerberos server,
+// How to check the time, and how to get pseudo random numbers for cryptography
 type CredConfig struct {
-	Dial DialFn
-	Now  NowFn
-	Rand io.Reader
+	Dial DialFn    // Defaults to DefaultDial(proto, realm)
+	Now  NowFn     // Defaults to time.Now()
+	Rand io.Reader // Defaults to rand.Reader
 }
 
 func (c *CredConfig) dial(proto, realm string) (io.ReadWriteCloser, error) {
@@ -165,7 +167,22 @@ func newCredential(pr principalName, realm string, key key, kvno int, cfg *CredC
 // Note: This does not check that the password is correct. In order to do that
 // request an appropriate ticket.
 //
-// TODO: Check that UTF8 usernames actually work.
+// IN:
+// user		:	Kerberos username
+//
+// realm	:	Kerberos Realm
+//
+// pass		:	Kerberos user password, in plaintext currently.
+//
+// cfg		:	CredConfig
+//
+// OUT:
+// *Credential	:	The user credential
+//
+// error		:	The error message
+//
+//  TODO: Check that UTF8 usernames actually work.
+//  TODO: Consider removing because usage of plaintext password
 func NewCredential(user, realm, pass string, cfg *CredConfig) (*Credential, error) {
 	// We need to do an AP_REQ with no preauth in order to get the salt
 	// and to figure out what crypto algorithms are supported for this
@@ -318,19 +335,26 @@ var DefaultTicketConfig = TicketConfig{
 // Cached entries will not be used if they don't meet all the flags, but the
 // returned ticket may not have all the flags if the domain policy forbids
 // some of them. Valid flag values are of the form Ticket*.
+// One of a number of possiblities:
+//
+// 1. Init state (no keys) user is requesting service key. Send AS_REQ then send TGS_REQ.
+//
+// 2. Init state (no keys) user is requesting krbtgt key. Send AS_REQ, find krbtgt key in cache.
+//
+// 3. Have krbtgt key for local realm, but not for the requested realm. Use local realm krbtgt key to send TGS_REQ and then follow the trail.
+//
+// 4. Have krbtgt key for service realm. Use to send TGS_REQ.
+//
+// The algorithm is thus:
+//
+// 1. Lookup ticket in cache. Return if found.
+//
+// 2. Lookup service realm tgt key in cache. Use with TGS_REQ to get ticket if found.
+//
+// 3. Lookup local realm tgt key in cache. Use with TGS_REQ to get ticket if found and follow trail.
+//
+// 4. Send AS_REQ to get local realm tgt key. Then send TGS_REQ and follow trail.
 func (c *Credential) GetTicket(service string, cfg *TicketConfig) (*Ticket, error) {
-	// One of a number of possiblities:
-	// 1. Init state (no keys) user is requesting service key. Send AS_REQ then send TGS_REQ.
-	// 2. Init state (no keys) user is requesting krbtgt key. Send AS_REQ, find krbtgt key in cache.
-	// 3. Have krbtgt key for local realm, but not for the requested realm. Use local realm krbtgt key to send TGS_REQ and then follow the trail.
-	// 4. Have krbtgt key for service realm. Use to send TGS_REQ.
-
-	// The algorithm is thus:
-	// 1. Lookup ticket in cache. Return if found.
-	// 2. Lookup service realm tgt key in cache. Use with TGS_REQ to get ticket if found.
-	// 3. Lookup local realm tgt key in cache. Use with TGS_REQ to get ticket if found and follow trail.
-	// 4. Send AS_REQ to get local realm tgt key. Then send TGS_REQ and follow trail.
-
 	// We require that cached entries have at least 10 minutes left to use
 	ctill := c.cfg.now().Add(time.Minute * 10)
 

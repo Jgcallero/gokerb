@@ -255,6 +255,25 @@ type Ticket struct {
 	key       key
 }
 
+// This function attempts to find the SRV for the Kerberos server.
+// First it tries the SRV associated with _kerberos._<proto>.<realm>,
+// if that doesn't work then it tries _kerberos-master._<proto>.<realm>,
+// if both of those fails, it returns only an error.
+//
+// If it does find the SRV, it returns an array of them, using the net
+// coding for it. The function then creats a sock in order to check whether
+// or not we can actually connect to the server. If we can we return the sock
+// with the necesary information, otherwise we return the error.
+//
+// IN:
+// proto : The network protocol
+//
+// realm : The kerberos realm url
+//
+// OUT:
+// io.ReadWriteCloser	: A net sock holding the information to connect to the kerberos domain
+//
+// error				: The error message
 func DefaultDial(proto, realm string) (io.ReadWriteCloser, error) {
 	if proto != "tcp" && proto != "udp" {
 		return nil, ErrInvalidProto(proto)

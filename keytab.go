@@ -90,6 +90,16 @@ func readPrincipal2(file io.Reader, p *int64, ntype int) (n principalName, realm
 // that need to be able to renew their login.
 //
 // These are produced by MIT, heimdal, and the ktpass utility on windows.
+//
+// IN:
+// file			:	An io.Reader that has the location of the Keytab
+//
+// cfg			:	A CredConfig Pointer for reading the keytab.
+//
+// OUT:
+// creds		:	The keytab organized in an array of Credential Pointers
+//
+// err			:	The error message
 func ReadKeytab(file io.Reader, cfg *CredConfig) (creds []*Credential, err error) {
 	defer recoverMust(&err)
 
@@ -178,6 +188,14 @@ func appendPrincipal(d []byte, princ principalName, realm string) []byte {
 
 // WriteTo writes the credential and cached tickets out to a file as a
 // credential cache. This can then be read in by MIT or heimdal kerberos.
+//
+// IN:
+// file		:	io.Writer where the credential cache will be written
+//
+// OUT:
+// int64	:	TODO: Figure out what number is returned
+//
+// error	:	The error message
 func (c *Credential) WriteTo(file io.Writer) (int64, error) {
 	now := c.cfg.now()
 	n := int64(0)
@@ -327,6 +345,14 @@ func mustReadTickets(c *Credential, file io.Reader) (n int64) {
 //
 // All the tickets will be put into the credential's ticket cache (and can
 // be subsequently retrieved using GetTicket).
+//
+// IN:
+// file		:	io.Reader to where the credential cache is
+//
+// OUT:
+// n		:	TODO: Figure out what n is
+//
+// err		:	The error message
 func (c *Credential) ReadFrom(file io.Reader) (n int64, err error) {
 	defer recoverMust(&err)
 
@@ -345,6 +371,17 @@ func (c *Credential) ReadFrom(file io.Reader) (n int64, err error) {
 // ReadCredentialCache reads a credential cache in from file returning a new
 // credential. Since credential caches do not have the private key, tickets
 // can not be acquired/renewed once the ticket granting ticket expires.
+// The credential cache is normally found at /tmp/krb5cc_<uid> on unix.
+//
+// IN:
+// file		:	io.Reader to where the credential cache is.
+//
+// cfg		:	A CredConfig Pointer for reading the Credential Cache
+//
+// OUT:
+// rc		:	The Credential from the cache.
+//
+// err		:	The error message
 func ReadCredentialCache(file io.Reader, cfg *CredConfig) (rc *Credential, err error) {
 	defer recoverMust(&err)
 	n := int64(0)
@@ -363,6 +400,14 @@ func ReadCredentialCache(file io.Reader, cfg *CredConfig) (rc *Credential, err e
 
 // WriteKeytab writes the list of credentials out to a keytab. Keytabs store a
 // list of principals and their associated keys but not any cached tickets.
+//
+// IN:
+// file		:	An io.Writer, where the keytab will be written to.
+//
+// creds	:	An array of Credential to be used to write the keytab.
+//
+// OUT:
+// error	:	The error message
 func WriteKeytab(file io.Writer, creds []*Credential) error {
 	d := []byte{}
 
